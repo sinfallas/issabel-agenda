@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Made by Sinfallas <sinfallas@yahoo.com>
+# Licence: GPL-2
+IFS=$'\n'
+
+if [[ "$EUID" != "0" ]]; then
+        echo -e "\e[00;31mERROR: Debe ser root.\e[00m"
+        exit 1
+fi
+clear
+mt="/var/www/html"
+results=$(mysql -uroot -pCLAVE -D asterisk -h 127.0.0.1 --skip-column-names --execute="SELECT extension, name FROM users WHERE extension" | grep -v + | awk '{print $1}')
+results2=$(mysql -uroot -pCLAVE -D asterisk -h 127.0.0.1 --skip-column-names --execute="SELECT extension, name FROM users WHERE extension" | grep -v + | awk '{$1 = ""; print}' | sed -e 's/^.//')
+re1=($results)
+re2=($results2)
+rm -f $mt/phonebook.xml
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' > $mt/phonebook.xml
+echo '<AddressBook>' >> $mt/phonebook.xml
+echo '  <pbgroup>' >> $mt/phonebook.xml
+echo '          <id>1</id>' >> $mt/phonebook.xml
+echo '          <name>Family</name>' >> $mt/phonebook.xml
+echo '  </pbgroup>' >> $mt/phonebook.xml
+echo '  <pbgroup>' >> $mt/phonebook.xml
+echo '          <id>2</id>' >> $mt/phonebook.xml
+echo '          <name>Friends</name>' >> $mt/phonebook.xml
+echo '  </pbgroup>' >> $mt/phonebook.xml
+echo '  <pbgroup>' >> $mt/phonebook.xml
+echo '          <id>3</id>' >> $mt/phonebook.xml
+echo '          <name>Work</name>' >> $mt/phonebook.xml
+echo '  </pbgroup>' >> $mt/phonebook.xml
+echo '  <pbgroup>' >> $mt/phonebook.xml
+echo '          <id>4</id>' >> $mt/phonebook.xml
+echo '          <name>Blacklist</name>' >> $mt/phonebook.xml
+echo '  </pbgroup>' >> $mt/phonebook.xml
+echo '  <pbgroup>' >> $mt/phonebook.xml
+echo '          <id>5</id>' >> $mt/phonebook.xml
+echo '          <name>Whitelist</name>' >> $mt/phonebook.xml
+echo '  </pbgroup>' >> $mt/phonebook.xml
+echo ""  >> $mt/phonebook.xml
+
+length=${#re1[@]}
+for ((i=0;i<=$length;i++)); do
+        echo "  <Contact>" >> $mt/phonebook.xml
+        echo -e "          <FirstName>${re2[$i]}</FirstName>" >> $mt/phonebook.xml
+        echo "          <LastName></LastName>" >> $mt/phonebook.xml
+        echo "          <Frequent>0</Frequent>" >> $mt/phonebook.xml
+        echo '          <Phone type="Work">' >> $mt/phonebook.xml
+        echo -e "               <phonenumber>${re1[$i]}</phonenumber>" >> $mt/phonebook.xml
+        echo "          <accountindex>1</accountindex>" >> $mt/phonebook.xml
+        echo "          </Phone>" >> $mt/phonebook.xml
+        echo "          <Primary>0</Primary>" >> $mt/phonebook.xml
+        echo "          <Department></Department>" >> $mt/phonebook.xml
+        echo "  </Contact>" >> $mt/phonebook.xml
+        echo "" >> $mt/phonebook.xml
+done
+echo "</AddressBook>" >> $mt/phonebook.xml
+
+chown asterisk:asterisk /var/www/html/phonebook.xml
+
+echo Finalizado.
+exit 0
